@@ -3,7 +3,7 @@ import { classMap } from 'lit-html/directives/class-map';
 import { day } from './components/calendar';
 import { calendar as getDates, groupByWeek } from './lib/calendar';
 import { render } from 'lit-html';
-import { month } from './components/month';
+import { month, CalendarEvent, getLanguage } from './components/month';
 import { year } from './components/year';
 
 const dateClasses = {
@@ -19,22 +19,74 @@ const gridClasses = {
   'uk-grid-column-collapse': true
 }
 
-const datePicker = (onDatePicked: (date: Date) => void, dates: Date[] = getDates(new Date())) => {
-  const dateTemplate = day(onDatePicked);
-  const monthPicker = month(console.log);
-  const yearPicker = year(console.log);
-  return html`
-    <div class="uk-container">
-      <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: dates[15], classes: dateClasses })}</div>
-      <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: dates[15], classes: dateClasses })}</div>
-      ${groupByWeek(dates).map(
-          days => html`
-            <div class=${classMap(gridClasses)} data-uk-grid>
-              ${days.map(day => dateTemplate({date: day, classes: dateClasses}))}
-            </div>`
-      )}
-    </div>`
-};
 
+type CalendarEvents = {
+  day: CalendarEvent,
+  month: CalendarEvent,
+  year: CalendarEvent
+}
 
-render(datePicker(console.log, getDates(new Date(Date.UTC(1984, 7, 15)))), document.body);
+const datePicker = (events: CalendarEvents) => {
+  const dayPicker = day(events.day)
+  const monthPicker = month(events.month);
+  const yearPicker = year(events.year);
+
+  return (currentDate: Date = new Date()) => {
+    const dates = getDates(currentDate);
+
+    return html`
+      <div class="uk-container">
+        <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: currentDate, classes: dateClasses })}</div>
+        <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: currentDate, classes: dateClasses })}</div>
+        ${groupByWeek(dates).map(
+            days => html`
+              <div class=${classMap(gridClasses)} data-uk-grid>
+                ${days.map(day => dayPicker({date: day, classes: dateClasses}))}
+              </div>`
+        )}
+      </div>`
+  };
+}
+
+const dateElement = (input: HTMLInputElement, value: Date = new Date()) => {
+  function useInput(element: HTMLInputElement) {
+    const wrapper = document.createElement('div');
+    element.setAttribute('hidden', '');
+    element.parentElement.insertBefore(wrapper, element);
+    return wrapper;
+  }
+
+  function redraw(target: HTMLElement): CalendarEvent {
+    return (e: Event, date: Date) => {
+      e.stopPropagation();
+      render(calendarTemplate(date), target);
+    }
+  }
+
+  function getDateFormatter() {
+    const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+    return new Intl.DateTimeFormat(getLanguage(), options);
+  }
+
+  function setValue(element: HTMLInputElement): CalendarEvent {
+    return (e, date) => {
+      e.stopPropagation();
+      element.value = getDateFormatter().format(date);
+      element.dispatchEvent(new Event('change'));
+      element.dispatchEvent(new Event('input'));
+    }
+  }
+
+  const target = useInput(input);
+
+  const eventHandlers: CalendarEvents = {
+    day: setValue(input),
+    month: redraw(target),
+    year: redraw(target)
+  };
+
+  const calendarTemplate = datePicker(eventHandlers);
+  render(calendarTemplate(value), target);
+}
+
+dateElement(document.querySelector('[type=date]'));
