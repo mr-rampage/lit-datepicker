@@ -41,7 +41,7 @@ function setValue(element: HTMLInputElement): CalendarEvent {
   return (e, date) => {
     e.stopPropagation();
     const previous = element.valueAsDate;
-    const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+    const next = date;
 
     if (!isSame(previous, next)) {
       element.value = getDateFormatter().format(date);
@@ -54,5 +54,6 @@ function setValue(element: HTMLInputElement): CalendarEvent {
 }
 
 function main() {
-  replaceInputs(document.querySelector('[type=date]'));
+  document.querySelectorAll('[type=date]')
+    .forEach((input: HTMLInputElement) => replaceInputs(input))
 }
