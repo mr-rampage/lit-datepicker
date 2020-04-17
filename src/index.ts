@@ -4,6 +4,7 @@ import { day } from './components/calendar';
 import { calendar as getDates, groupByWeek } from './lib/calendar';
 import { render } from 'lit-html';
 import { month } from './components/month';
+import { year } from './components/year';
 
 const dateClasses = {
   'uk-button': true,
@@ -21,8 +22,10 @@ const gridClasses = {
 const datePicker = (onDatePicked: (date: Date) => void, dates: Date[] = getDates(new Date())) => {
   const dateTemplate = day(onDatePicked);
   const monthPicker = month(console.log);
+  const yearPicker = year(console.log);
   return html`
     <div class="uk-container">
+      <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: dates[15], classes: dateClasses })}</div>
       <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: dates[15], classes: dateClasses })}</div>
       ${groupByWeek(dates).map(
           days => html`

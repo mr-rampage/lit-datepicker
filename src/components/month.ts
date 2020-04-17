@@ -5,10 +5,12 @@ import { DateProps } from './calendar';
 export const month = (onMonthPicked: (date: Date) => void) => ({date, classes = {}}: DateProps): TemplateResult => {
   const lastMonth = new Date(date.getFullYear(), date.getMonth() - 1, 1);
   const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-  const formatter = new Intl.DateTimeFormat('en', { month: 'long' });
+  const formatter = new Intl.DateTimeFormat(getLanguage(), { month: 'long' });
   return html`
     <button class=${classMap(classes)} @click=${() => onMonthPicked(lastMonth)}>${formatter.format(lastMonth)}</button>
     <span class=${classMap(classes)}>${formatter.format(date)}</span>
     <button class=${classMap(classes)} @click=${() => onMonthPicked(nextMonth)}>${formatter.format(nextMonth)}</button>
   `;
 }
+
+export const getLanguage = (): string => window.navigator.languages ? window.navigator.languages[0] : window.navigator['userLanguage'] || window.navigator.language;
