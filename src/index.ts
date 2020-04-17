@@ -1,92 +1,58 @@
-import { html } from 'lit-html';
-import { classMap } from 'lit-html/directives/class-map';
-import { day } from './components/calendar';
-import { calendar as getDates, groupByWeek } from './lib/calendar';
 import { render } from 'lit-html';
-import { month, CalendarEvent, getLanguage } from './components/month';
-import { year } from './components/year';
+import { CalendarEvent } from './components';
+import { getLanguage, isSame } from './components/utils';
+import { calendar } from './components/uikit-calendar';
 
-const dateClasses = {
-  'uk-button': true,
-  'uk-button-default': true,
-  'uk-padding-remove-horizontal': true
-};
+main();
 
-const gridClasses = {
-  'uk-grid-small': true,
-  'uk-child-width-expand': true,
-  'uk-grid-row-collapse': true,
-  'uk-grid-column-collapse': true
-}
+function replaceInputs(input: HTMLInputElement) {
+  const target = useInput(input);
+  let value = input.valueAsDate || new Date();
 
+  const calendarTemplate = calendar({
+    onDaySelected: (e: Event, date: Date) => { value = date; setValue(input)(e, date); redraw(target)(e, date); },
+    onMonthChanged: redraw(target),
+    onYearChanged: redraw(target)
+  });
 
-type CalendarEvents = {
-  day: CalendarEvent,
-  month: CalendarEvent,
-  year: CalendarEvent
-}
-
-const datePicker = (events: CalendarEvents) => {
-  const dayPicker = day(events.day)
-  const monthPicker = month(events.month);
-  const yearPicker = year(events.year);
-
-  return (currentDate: Date = new Date()) => {
-    const dates = getDates(currentDate);
-
-    return html`
-      <div class="uk-container">
-        <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: currentDate, classes: dateClasses })}</div>
-        <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: currentDate, classes: dateClasses })}</div>
-        ${groupByWeek(dates).map(
-            days => html`
-              <div class=${classMap(gridClasses)} data-uk-grid>
-                ${days.map(day => dayPicker({date: day, classes: dateClasses}))}
-              </div>`
-        )}
-      </div>`
-  };
-}
-
-const dateElement = (input: HTMLInputElement, value: Date = new Date()) => {
-  function useInput(element: HTMLInputElement) {
-    const wrapper = document.createElement('div');
-    element.setAttribute('hidden', '');
-    element.parentElement.insertBefore(wrapper, element);
-    return wrapper;
-  }
+  render(calendarTemplate(value, value), target);
 
   function redraw(target: HTMLElement): CalendarEvent {
     return (e: Event, date: Date) => {
       e.stopPropagation();
-      render(calendarTemplate(date), target);
+      render(calendarTemplate(date, value), target);
     }
   }
+}
 
-  function getDateFormatter() {
-    const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-    return new Intl.DateTimeFormat(getLanguage(), options);
-  }
+function useInput(element: HTMLInputElement) {
+  const wrapper = document.createElement('div');
+  element.setAttribute('hidden', '');
+  element.parentElement.insertBefore(wrapper, element);
+  return wrapper;
+}
 
-  function setValue(element: HTMLInputElement): CalendarEvent {
-    return (e, date) => {
-      e.stopPropagation();
+function getDateFormatter() {
+  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+  return new Intl.DateTimeFormat(getLanguage(), options);
+}
+
+function setValue(element: HTMLInputElement): CalendarEvent {
+  return (e, date) => {
+    e.stopPropagation();
+    const previous = element.valueAsDate;
+    const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+
+    if (!isSame(previous, next)) {
       element.value = getDateFormatter().format(date);
       element.dispatchEvent(new Event('change'));
       element.dispatchEvent(new Event('input'));
     }
+    
+    return date;
   }
-
-  const target = useInput(input);
-
-  const eventHandlers: CalendarEvents = {
-    day: setValue(input),
-    month: redraw(target),
-    year: redraw(target)
-  };
-
-  const calendarTemplate = datePicker(eventHandlers);
-  render(calendarTemplate(value), target);
 }
 
-dateElement(document.querySelector('[type=date]'));
+function main() {
+  replaceInputs(document.querySelector('[type=date]'));
+}

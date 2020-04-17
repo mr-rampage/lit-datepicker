@@ -1,6 +1,6 @@
 import { html } from 'lit-html';
 import { classMap } from 'lit-html/directives/class-map';
-import { CalendarEvent } from './month';
+import { CalendarEvent } from '.';
 
 export type DateProps = {
   date: Date,
