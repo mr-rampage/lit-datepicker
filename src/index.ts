@@ -1,27 +1,34 @@
-import { render } from 'lit-html';
-import { CalendarEvent } from './components';
+import { render, TemplateResult } from 'lit-html';
+import { CalendarProps, InputProps } from './components';
 import { getLanguage, isSame } from './components/utils';
 import { calendar } from './components/uikit-calendar';
+import { StateSideEffectFactory, StateSideEffect } from './index.d';
 
 main();
 
-function replaceInputs(input: HTMLInputElement) {
-  const target = useInput(input);
-  let value = input.valueAsDate || new Date();
-
-  const calendarTemplate = calendar({
-    onDaySelected: (e: Event, date: Date) => { value = date; setValue(input)(e, date); redraw(target)(e, date); },
-    onMonthChanged: redraw(target),
-    onYearChanged: redraw(target)
-  });
-
-  render(calendarTemplate(value, value), target);
-
-  function redraw(target: HTMLElement): CalendarEvent {
-    return (e: Event, date: Date) => {
-      e.stopPropagation();
-      render(calendarTemplate(date, value), target);
+// General Purpose
+function stateHandler<T extends object, K extends keyof T>(sideEffect: StateSideEffect<T>): ProxyHandler<T> {
+  return {
+    set(obj: T, prop: K, newValue: T[K]) {
+      const oldValue = obj[prop];
+      obj[prop] = newValue;
+      if (sideEffect[prop]) {
+        sideEffect[prop](oldValue, newValue);
+      }
+      return true;
     }
+  }
+}
+
+function replaceInput<T extends InputProps>(input: HTMLInputElement, bind: (state: T) => (state: T) => TemplateResult, stateSideEffectFactory: StateSideEffectFactory<T>, initialState: T) {
+  const target = useInput(input);
+  const state = new Proxy(initialState, stateHandler(stateSideEffectFactory(input, draw)));
+  const template = bind(state);
+
+  draw();
+  
+  function draw() {
+    render(template(state), target);
   }
 }
 
@@ -32,28 +39,37 @@ function useInput(element: HTMLInputElement) {
   return wrapper;
 }
 
-function getDateFormatter() {
+
+// Component unique
+function stateEffect(input: HTMLInputElement, redraw: () => void): StateSideEffect<CalendarProps> {
   const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-  return new Intl.DateTimeFormat(getLanguage(), options);
-}
+  const dateFormatter = new Intl.DateTimeFormat(getLanguage(), options);
 
-function setValue(element: HTMLInputElement): CalendarEvent {
-  return (e, date) => {
-    e.stopPropagation();
-    const previous = element.valueAsDate;
-    const next = date;
-
-    if (!isSame(previous, next)) {
-      element.value = getDateFormatter().format(date);
-      element.dispatchEvent(new Event('change'));
-      element.dispatchEvent(new Event('input'));
+  return {
+    value(oldValue, newValue) {
+      if (!isSame(oldValue, newValue)) {
+        input.value = dateFormatter.format(newValue);
+        input.dispatchEvent(new Event('change'));
+        input.dispatchEvent(new Event('input'));
+        redraw();
+      }
+    },
+    month() {
+      redraw();
     }
-    
-    return date;
-  }
+}};
+
+function datePicker(state: CalendarProps): (state: CalendarProps) => TemplateResult {
+  return calendar({
+    onDaySelected: (e, date) => { e.stopPropagation(); state.value = date; },
+    onMonthChanged: (e, date) => { e.stopPropagation(); state.month = date; },
+    onYearChanged: (e, date) => { e.stopPropagation(); state.month = date; }
+  })
 }
 
 function main() {
   document.querySelectorAll('[type=date]')
-    .forEach((input: HTMLInputElement) => replaceInputs(input))
+    .forEach((input: HTMLInputElement) => {
+      replaceInput(input, datePicker, stateEffect, { value: input.valueAsDate || new Date(), month: new Date()});
+    })
 }

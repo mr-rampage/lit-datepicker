@@ -1,10 +1,10 @@
 import { html } from 'lit-html';
 import { classMap } from 'lit-html/directives/class-map';
-import { day } from './day';
-import { month } from './month';
-import { year } from './year';
+import { day as dayElement } from './day';
+import { month as monthElement } from './month';
+import { year as yearElement } from './year';
 import { calendar as getDates, groupByWeek } from '../lib/calendar';
-import { CalendarEvents } from '.';
+import { CalendarEvents, CalendarProps } from '.';
 import { isSame } from './utils';
 
 const dateClasses = {
@@ -21,18 +21,18 @@ const gridClasses = {
 }
 
 export const calendar = (events: CalendarEvents) => {
-  const dayPicker = day(events.onDaySelected)
-  const monthPicker = month(events.onMonthChanged);
-  const yearPicker = year(events.onYearChanged);
+  const dayPicker = dayElement(events.onDaySelected)
+  const monthPicker = monthElement(events.onMonthChanged);
+  const yearPicker = yearElement(events.onYearChanged);
 
-  return (currentDate: Date = new Date(), selectedDate: Date = new Date()) => {
-    const dates = getDates(currentDate);
-    const getDayClasses = dayClasses(currentDate, selectedDate, dateClasses);
+  return ({month = new Date(), value = new Date()}: CalendarProps) => {
+    const dates = getDates(month);
+    const getDayClasses = dayClasses(month, value, dateClasses);
 
     return html`
       <div class="uk-container">
-        <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: currentDate, classes: dateClasses })}</div>
-        <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: currentDate, classes: dateClasses })}</div>
+        <div class=${classMap(gridClasses)} data-uk-grid>${yearPicker({ date: month, classes: dateClasses })}</div>
+        <div class=${classMap(gridClasses)} data-uk-grid>${monthPicker({ date: month, classes: dateClasses })}</div>
         ${groupByWeek(dates).map(
             days => html`
               <div class=${classMap(gridClasses)} data-uk-grid>

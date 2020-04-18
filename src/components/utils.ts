@@ -6,3 +6,7 @@ export function isSame(previous: Date, next: Date) {
     previous.getUTCMonth() === next.getUTCMonth() && 
     previous.getUTCDate() === next.getUTCDate();
 }
+
+export function compare(a: Date, b: Date) {
+  
+}
