@@ -4,8 +4,14 @@ import { day as dayElement } from './day';
 import { month as monthElement } from './month';
 import { year as yearElement } from './year';
 import { calendar as getDates, groupByWeek } from '../lib/calendar';
-import { CalendarEvents, CalendarProps } from '.';
-import { isSame } from './utils';
+import { CalendarProps } from '.';
+import { isSame, today } from './utils';
+
+export type CalendarEventNames = {
+  dateClicked: string,
+  monthClicked: string,
+  yearClicked: string
+}
 
 const dateClasses = {
   'uk-button': true,
@@ -20,10 +26,10 @@ const gridClasses = {
   'uk-grid-column-collapse': true
 }
 
-export const calendar = (events: CalendarEvents) => {
-  const dayPicker = dayElement(events.onDaySelected)
-  const monthPicker = monthElement(events.onMonthChanged);
-  const yearPicker = yearElement(events.onYearChanged);
+export const calendar = (events: CalendarEventNames) => {
+  const dayPicker = dayElement(events.dateClicked);
+  const monthPicker = monthElement(events.monthClicked);
+  const yearPicker = yearElement(events.yearClicked);
 
   return ({month = new Date(), value = new Date()}: CalendarProps) => {
     const dates = getDates(month);
@@ -48,7 +54,7 @@ function dayClasses(currentDate: Date, selectedDate: Date, dateClasses: any) {
     return ({
       'uk-button-primary': isSame(day, selectedDate), 
       'uk-button-secondary': day.getMonth() !== currentDate.getMonth() && !isSame(day, selectedDate) && !isSame(day, new Date()),
-      'uk-button-danger': isSame(day, new Date()) && !isSame(new Date(), selectedDate),
+      'uk-button-danger': isSame(day, today()) && !isSame(today(), selectedDate),
       ...dateClasses
     })
   }

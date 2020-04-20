@@ -1,4 +1,4 @@
-export type CalendarEvent = (e: Event, date: Date) => void;
+export type CalendarEvent = (date: Date) => void;
 
 export type CalendarEvents = {
   onDaySelected: CalendarEvent,

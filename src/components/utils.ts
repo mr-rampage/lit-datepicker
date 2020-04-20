@@ -2,6 +2,19 @@ import { render, TemplateResult } from "lit-html";
 
 export const getLanguage = (): string => window.navigator.languages ? window.navigator.languages[0] : window.navigator['userLanguage'] || window.navigator.language;
 
+export function CalendarEvent<T>(eventName: string) {
+  return (detail: T) => new CustomEvent(eventName, { detail, bubbles: true });
+}
+
+export function dispatch<T>(eventName: string, detail: T) {
+  return (e: Event) => e.target.dispatchEvent(CalendarEvent(eventName)(detail))
+}
+
+export function today() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
 export function isSame(previous: Date, next: Date) {
   return previous !== null &&
     previous.getUTCFullYear() === next.getUTCFullYear() && 
@@ -29,7 +42,7 @@ export function pipe(...fns: Function[]) {
  return (x: any) => fns.reduce((v, f) => f(v), x); 
 }
 
-export function renderOnNext<S>(template: (state: S) => TemplateResult, target: HTMLElement, onNext: (newState: S, oldState: S) => void):
+export function renderOnNext<S>(template: (state: S) => TemplateResult, target: HTMLElement, onNext: (newState: S, oldState: S) => void = () => {}):
   (state: S) => Generator<S, void, Partial<S>> {
   function* store(oldState: S) {
     render(template(oldState), target);
