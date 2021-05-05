@@ -14,7 +14,7 @@
   "author": "mr-rampage",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^11.2.1",
+    "@rollup/plugin-node-resolve": "^13.0.0",
     "@rollup/plugin-typescript": "^8.2.1",
     "@types/tape": "^4.2.34",
     "fast-check": "^2.14.0",
